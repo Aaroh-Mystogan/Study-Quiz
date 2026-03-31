@@ -38,7 +38,7 @@
 
     <section class="panel">
       <h2>Race View</h2>
-      <p class="muted">Cars move forward based on current score.</p>
+      <p class="muted">Single shared track: everyone races toward the same finish line.</p>
       <div id="raceTrack" class="race-track"></div>
     </section>
 
@@ -101,22 +101,37 @@
       const minScore = Math.min(...scores);
       const maxScore = Math.max(...scores);
       const range = Math.max(1, maxScore - minScore);
+      const laneHeight = 48;
+      const boardHeight = Math.max(160, players.length * laneHeight + 10);
 
+      raceTrack.innerHTML = `
+        <div class="race-board" style="height:${boardHeight}px">
+          <div class="finish-line-shared"></div>
+        </div>
+      `;
+
+      const board = raceTrack.querySelector(".race-board");
       players.forEach((p, idx) => {
-        const progress = ((p.score - minScore) / range) * 100;
+        const progress = 4 + ((p.score - minScore) / range) * 90;
+        const topPx = 10 + idx * laneHeight;
+
         const lane = document.createElement("div");
-        lane.className = "race-lane";
-        lane.innerHTML = `
-          <div class="race-meta">
-            <strong>${idx + 1}. ${p.name}</strong>
-            <span>${p.score} pts</span>
-          </div>
-          <div class="lane-track">
-            <div class="finish-line"></div>
-            <div class="car" style="left: calc(${progress}% - 14px)" title="${p.name}">${p.id === state.leader_id ? "????" : "??"}</div>
-          </div>
-        `;
-        raceTrack.appendChild(lane);
+        lane.className = "race-row";
+        lane.style.top = `${topPx}px`;
+
+        const car = document.createElement("div");
+        car.className = "car-chip";
+        car.style.left = `${progress}%`;
+        car.textContent = p.id === state.leader_id ? "LEAD CAR" : "CAR";
+
+        const label = document.createElement("div");
+        label.className = "car-label";
+        label.style.left = `${progress}%`;
+        label.textContent = `${idx + 1}. ${p.name} (${p.score})`;
+
+        lane.appendChild(car);
+        lane.appendChild(label);
+        board.appendChild(lane);
       });
     }
 

@@ -156,55 +156,77 @@ button:hover, .btn:hover {
   color: var(--accent);
 }
 
+
 .race-track {
-  display: grid;
-  gap: 10px;
+  width: 100%;
 }
 
-.race-lane {
-  border: 1px solid #ddd4b8;
-  background: #fff9ea;
-  border-radius: 10px;
-  padding: 8px;
-}
-
-.race-meta {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.95rem;
-  margin-bottom: 6px;
-}
-
-.lane-track {
+.race-board {
   position: relative;
-  height: 38px;
-  border-radius: 8px;
-  background:
-    linear-gradient(to bottom, #f6f2e4 0%, #efe5c7 100%);
-  overflow: hidden;
-}
-
-.finish-line {
-  position: absolute;
-  top: 0;
-  right: 8px;
-  bottom: 0;
-  width: 8px;
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid #d9cfb0;
   background:
     repeating-linear-gradient(
       to bottom,
-      #111 0 6px,
-      #fff 6px 12px
+      #f8f2df 0 24px,
+      #efe5c6 24px 48px
     );
+  overflow: hidden;
 }
 
-.car {
+.finish-line-shared {
   position: absolute;
-  top: 6px;
+  top: 0;
+  right: 4%;
+  bottom: 0;
+  width: 10px;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      #111 0 8px,
+      #fff 8px 16px
+    );
+  z-index: 1;
+}
+
+.race-row {
+  position: absolute;
   left: 0;
-  font-size: 1.3rem;
-  transition: left 400ms ease;
-  will-change: left;
+  right: 0;
+  height: 40px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.12);
+}
+
+.car-chip {
+  position: absolute;
+  top: 14px;
+  transform: translateX(-50%);
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #ff7d00;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  transition: left 450ms ease;
+  z-index: 3;
+}
+
+.car-label {
+  position: absolute;
+  top: -2px;
+  transform: translateX(-50%);
+  font-size: 0.78rem;
+  color: #23343f;
+  background: rgba(255, 255, 255, 0.75);
+  padding: 1px 6px;
+  border-radius: 999px;
+  white-space: nowrap;
+  max-width: 48%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 4;
 }
 @media (max-width: 700px) {
   .room-header {
@@ -212,4 +234,5 @@ button:hover, .btn:hover {
     align-items: flex-start;
   }
 }
+
 
