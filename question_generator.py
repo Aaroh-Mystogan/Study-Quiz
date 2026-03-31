@@ -1,7 +1,11 @@
+import json
+import os
 import random
 import re
 from collections import Counter
-from typing import Dict, List
+from typing import Dict, List, Optional
+
+from openai import OpenAI
 
 STOPWORDS = {
     "the", "and", "that", "with", "from", "this", "have", "were", "their", "there", "which", "would", "about",
@@ -82,7 +86,7 @@ def _build_options(answer: str, global_terms: List[str]) -> List[str]:
     return [o.capitalize() for o in options]
 
 
-def generate_questions_from_text(text: str, rounds: int, difficulty: str) -> List[Dict]:
+def _generate_questions_heuristic(text: str, rounds: int, difficulty: str) -> List[Dict]:
     random.seed()
     text = _clean_text(text)
     sentences = _split_sentences(text)
@@ -121,3 +125,107 @@ def generate_questions_from_text(text: str, rounds: int, difficulty: str) -> Lis
         )
 
     return questions
+
+
+def _normalize_ai_questions(raw: Dict, rounds: int) -> Optional[List[Dict]]:
+    questions = raw.get("questions")
+    if not isinstance(questions, list):
+        return None
+
+    normalized = []
+    for idx, item in enumerate(questions[:rounds], start=1):
+        if not isinstance(item, dict):
+            continue
+
+        question = str(item.get("question", "")).strip()
+        options = item.get("options")
+        answer_index = item.get("answer_index")
+
+        if not question or not isinstance(options, list) or len(options) != 4:
+            continue
+        if not isinstance(answer_index, int) or answer_index < 0 or answer_index > 3:
+            continue
+
+        cleaned_options = [str(opt).strip() for opt in options]
+        if any(not opt for opt in cleaned_options):
+            continue
+
+        normalized.append(
+            {
+                "id": idx,
+                "question": question,
+                "options": cleaned_options,
+                "correct_index": answer_index,
+            }
+        )
+
+    if len(normalized) < rounds:
+        return None
+    return normalized[:rounds]
+
+
+def _generate_questions_openai(text: str, rounds: int, difficulty: str) -> Optional[List[Dict]]:
+    api_key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if not api_key:
+        return None
+
+    model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini"
+    context = _clean_text(text)[:25000]
+    if not context:
+        return None
+
+    prompt = f"""
+Generate exactly {rounds} multiple-choice quiz questions from the study material below.
+Difficulty: {difficulty}
+
+Rules:
+- Output valid JSON only.
+- JSON schema:
+{{
+  "questions": [
+    {{
+      "question": "string",
+      "options": ["string", "string", "string", "string"],
+      "answer_index": 0
+    }}
+  ]
+}}
+- Exactly 4 options per question.
+- Exactly one correct option per question, answer_index in [0,1,2,3].
+- Questions must be answerable from the provided material.
+- Avoid duplicate questions and avoid trivial wording.
+- Keep option lengths similar and plausible.
+
+Study material:
+\"\"\"{context}\"\"\"
+"""
+
+    client = OpenAI(api_key=api_key)
+    response = client.responses.create(
+        model=model,
+        input=prompt,
+        temperature=0.5,
+        max_output_tokens=4000,
+    )
+
+    raw_text = getattr(response, "output_text", "") or ""
+    if not raw_text:
+        return None
+
+    try:
+        parsed = json.loads(raw_text)
+    except json.JSONDecodeError:
+        return None
+
+    return _normalize_ai_questions(parsed, rounds)
+
+
+def generate_questions_from_text(text: str, rounds: int, difficulty: str) -> List[Dict]:
+    try:
+        ai_questions = _generate_questions_openai(text, rounds, difficulty)
+        if ai_questions:
+            return ai_questions
+    except Exception:
+        pass
+
+    return _generate_questions_heuristic(text, rounds, difficulty)

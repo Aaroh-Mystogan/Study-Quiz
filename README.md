@@ -10,6 +10,7 @@ A Python website where users create/join rooms, upload one or more PDFs, and com
   - Rounds: 10 or 15
 - PDF text extraction from uploaded files
 - Auto-generated 4-option MCQs from PDF content
+- LLM-based question generation via OpenAI (with local fallback if API is unavailable)
 - Live scoring:
   - Correct answer: +10
   - Wrong answer: -5
@@ -64,6 +65,15 @@ Use `.env.example` as template:
 - `SESSION_COOKIE_SECURE`
 - `SESSION_COOKIE_SAMESITE`
 - `MAX_CONTENT_LENGTH_MB`
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL`
+
+## Enable OpenAI question generation
+1. Set `OPENAI_API_KEY` in your host environment (Render Environment tab).
+2. Optionally set `OPENAI_MODEL` (default: `gpt-4o-mini`).
+3. Redeploy.
+
+If OpenAI is unavailable for any reason, the app automatically falls back to the built-in heuristic generator so gameplay continues.
 
 ## Important scaling note
 Room and game state is currently stored in-memory (`rooms` dict). This means:
