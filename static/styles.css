@@ -166,3 +166,42 @@ button:hover, .btn:hover {
 
 
 
+.freddy-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(255, 0, 0, 0.75), rgba(0, 0, 0, 0.95) 62%);
+  opacity: 0;
+}
+
+.freddy-overlay.active {
+  opacity: 1;
+  animation: freddyFlash 120ms steps(2, end) 0s 16;
+}
+
+.freddy-content {
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+.freddy-title {
+  font-size: clamp(2rem, 7vw, 4rem);
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.freddy-sub {
+  margin-top: 8px;
+  font-size: clamp(1.1rem, 3.2vw, 1.8rem);
+  font-weight: 700;
+}
+
+@keyframes freddyFlash {
+  0% { filter: saturate(1) brightness(1); }
+  50% { filter: saturate(1.8) brightness(1.35); }
+  100% { filter: saturate(1) brightness(1); }
+}
