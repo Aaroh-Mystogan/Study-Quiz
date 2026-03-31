@@ -205,3 +205,54 @@ button:hover, .btn:hover {
   50% { filter: saturate(1.8) brightness(1.35); }
   100% { filter: saturate(1) brightness(1); }
 }
+.confetti-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  background: rgba(12, 20, 36, 0.22);
+  opacity: 0;
+}
+
+.confetti-overlay.active {
+  opacity: 1;
+}
+
+.confetti-pieces {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -20px;
+  width: 10px;
+  height: 16px;
+  opacity: 0.95;
+  border-radius: 2px;
+  animation-name: confettiFall;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.confetti-banner {
+  position: absolute;
+  left: 50%;
+  top: 14%;
+  transform: translateX(-50%);
+  color: #ffffff;
+  font-size: clamp(1.6rem, 5vw, 3.2rem);
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    transform: translateY(115vh) rotate(720deg);
+  }
+}
