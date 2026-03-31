@@ -256,3 +256,7 @@ button:hover, .btn:hover {
     transform: translateY(115vh) rotate(720deg);
   }
 }
+.confetti-overlay.hidden,
+.freddy-overlay.hidden {
+  display: none !important;
+}
