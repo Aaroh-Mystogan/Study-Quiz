@@ -39,6 +39,7 @@
     <section class="panel hidden" id="finalPanel">
       <h2>Final Standings</h2>
       <div id="finalStandings"></div>
+      <button id="restartBtn" class="btn hidden">Restart Same Lobby</button>
     </section>
 
     <a href="/" class="back-link">Back to lobby</a>
@@ -55,6 +56,7 @@
     const roundReport = document.getElementById("roundReport");
     const finalPanel = document.getElementById("finalPanel");
     const finalStandings = document.getElementById("finalStandings");
+    const restartBtn = document.getElementById("restartBtn");
 
     let me = null;
     let state = null;
@@ -77,6 +79,7 @@
       const isLeader = me && me.player_id === state.leader_id;
       startBtn.classList.toggle("hidden", !(isLeader && state.status === "waiting"));
       nextBtn.classList.toggle("hidden", !(isLeader && state.status === "in_progress"));
+      restartBtn.classList.toggle("hidden", !(isLeader && state.status === "finished"));
     }
 
     function renderQuestion(payload) {
@@ -112,7 +115,7 @@
       roundReport.innerHTML = `
         <p><strong>Round ${report.round} complete.</strong> Correct answer: ${report.correct_text}</p>
         <table>
-          <thead><tr><th>Player</th><th>Result</th><th>Delta</th><th>Score</th></tr></thead>
+          <thead><tr><th>Player</th><th>Result</th><th>Last Q Points</th><th>Score</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       `;
@@ -130,6 +133,7 @@
     socket.on("question", (payload) => {
       renderQuestion(payload);
       nextBtn.classList.add("hidden");
+      finalPanel.classList.add("hidden");
     });
 
     socket.on("round_result", (payload) => {
@@ -155,6 +159,12 @@
     nextBtn.addEventListener("click", () => {
       nextBtn.classList.add("hidden");
       socket.emit("next_round");
+    });
+    restartBtn.addEventListener("click", () => {
+      restartBtn.classList.add("hidden");
+      roundReport.classList.add("muted");
+      roundReport.innerHTML = "No round data yet.";
+      socket.emit("restart_game");
     });
   </script>
 </body>

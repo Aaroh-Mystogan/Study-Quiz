@@ -1,4 +1,5 @@
 import os
+import random
 import secrets
 import string
 from datetime import UTC, datetime
@@ -182,6 +183,20 @@ def maybe_finalize_if_all_answered(room: Dict):
     answered = set(room["answers_current"].keys())
     if required and required.issubset(answered):
         finalize_round(room)
+
+
+def reset_room_for_restart(room: Dict):
+    # Keep same players/lobby settings, reset match state for a fresh run.
+    room["status"] = "in_progress"
+    room["current_round"] = 1
+    room["answers_current"] = {}
+    room["round_reports"] = []
+    room["awaiting_next"] = False
+
+    for player in room["players"].values():
+        player["score"] = 0
+
+    random.shuffle(room["questions"])
 
 
 @app.route("/")
@@ -400,6 +415,24 @@ def on_next_round():
     room["current_round"] += 1
     room["awaiting_next"] = False
     room["answers_current"] = {}
+    emit_room_state(code)
+    emit("question", current_question_payload(room), to=code)
+
+
+@socketio.on("restart_game")
+def on_restart_game():
+    code = (session.get("room_code") or "").upper()
+    player_id = session.get("player_id")
+    room = get_room(code)
+    if not room or player_id != room["leader_id"]:
+        return
+    if room["status"] != "finished":
+        return
+    if len(room["players"]) < 2:
+        emit("error_msg", {"message": "At least 2 players are needed to restart."})
+        return
+
+    reset_room_for_restart(room)
     emit_room_state(code)
     emit("question", current_question_payload(room), to=code)
 
