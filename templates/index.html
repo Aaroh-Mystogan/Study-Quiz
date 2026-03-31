@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Quiz Arena</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+  <main class="container">
+    <h1>PDF Quiz Arena</h1>
+    <p class="subtitle">Upload PDFs, generate MCQs, and battle live for points.</p>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash-wrap">
+          {% for msg in messages %}
+            <div class="flash">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <section class="card-grid">
+      <form class="card" action="/create-room" method="POST" enctype="multipart/form-data">
+        <h2>Create Room</h2>
+        <label>Your Name</label>
+        <input name="name" maxlength="24" required />
+
+        <label>Difficulty</label>
+        <select name="difficulty" required>
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+
+        <label>Rounds</label>
+        <select name="rounds" required>
+          <option value="10">10</option>
+          <option value="15">15</option>
+        </select>
+
+        <label>Upload PDF(s)</label>
+        <input type="file" name="pdfs" accept=".pdf" multiple required />
+
+        <button type="submit">Create & Enter Room</button>
+      </form>
+
+      <form class="card" action="/join-room" method="POST">
+        <h2>Join Room</h2>
+        <label>Your Name</label>
+        <input name="name" maxlength="24" required />
+
+        <label>Room Code</label>
+        <input name="room_code" maxlength="8" placeholder="e.g. AB12CD" required />
+
+        <button type="submit">Join Room</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

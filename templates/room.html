@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Room {{ room_code }} - PDF Quiz Arena</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+  <main class="container room-wrap">
+    <header class="room-header">
+      <h1>Room <span id="roomCode">{{ room_code }}</span></h1>
+      <div id="roomMeta" class="muted"></div>
+    </header>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Question</h2>
+        <button id="startBtn" class="btn">Start Game</button>
+      </div>
+      <div id="questionArea" class="question-area">
+        <p class="muted">Waiting for game to start...</p>
+      </div>
+      <div id="options" class="options"></div>
+      <button id="nextBtn" class="btn hidden">Next Round</button>
+    </section>
+
+    <section class="panel">
+      <h2>Round Report</h2>
+      <div id="roundReport" class="report muted">No round data yet.</div>
+    </section>
+
+    <section class="panel">
+      <h2>Scoreboard</h2>
+      <div id="scoreboard" class="scoreboard"></div>
+    </section>
+
+    <section class="panel hidden" id="finalPanel">
+      <h2>Final Standings</h2>
+      <div id="finalStandings"></div>
+    </section>
+
+    <a href="/" class="back-link">Back to lobby</a>
+  </main>
+
+  <script>
+    const socket = io();
+    const questionArea = document.getElementById("questionArea");
+    const optionsBox = document.getElementById("options");
+    const scoreboard = document.getElementById("scoreboard");
+    const roomMeta = document.getElementById("roomMeta");
+    const startBtn = document.getElementById("startBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const roundReport = document.getElementById("roundReport");
+    const finalPanel = document.getElementById("finalPanel");
+    const finalStandings = document.getElementById("finalStandings");
+
+    let me = null;
+    let state = null;
+    let answered = false;
+
+    function renderState() {
+      if (!state) return;
+      roomMeta.textContent = `Difficulty: ${state.difficulty} | Rounds: ${state.rounds} | Status: ${state.status}`;
+
+      scoreboard.innerHTML = "";
+      state.players.forEach((p, i) => {
+        const row = document.createElement("div");
+        row.className = "score-row";
+        const tag = p.id === state.leader_id ? "(Leader)" : "";
+        const conn = p.connected ? "online" : "offline";
+        row.innerHTML = `<span>${i + 1}. ${p.name} ${tag} <small class="muted">${conn}</small></span><strong>${p.score}</strong>`;
+        scoreboard.appendChild(row);
+      });
+
+      const isLeader = me && me.player_id === state.leader_id;
+      startBtn.classList.toggle("hidden", !(isLeader && state.status === "waiting"));
+      nextBtn.classList.toggle("hidden", !(isLeader && state.status === "in_progress"));
+    }
+
+    function renderQuestion(payload) {
+      answered = false;
+      questionArea.innerHTML = `<h3>Round ${payload.round} / ${payload.total_rounds}</h3><p>${payload.question}</p>`;
+      optionsBox.innerHTML = "";
+      payload.options.forEach((opt, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "option-btn";
+        btn.textContent = `${String.fromCharCode(65 + idx)}. ${opt}`;
+        btn.onclick = () => {
+          if (answered) return;
+          answered = true;
+          socket.emit("submit_answer", { choice: idx });
+          [...optionsBox.querySelectorAll("button")].forEach(b => b.disabled = true);
+          btn.classList.add("picked");
+        };
+        optionsBox.appendChild(btn);
+      });
+    }
+
+    function renderRoundReport(report) {
+      const rows = report.details.map(d => {
+        return `<tr>
+          <td>${d.name}</td>
+          <td>${d.result}</td>
+          <td>${d.delta}</td>
+          <td>${d.score}</td>
+        </tr>`;
+      }).join("");
+
+      roundReport.classList.remove("muted");
+      roundReport.innerHTML = `
+        <p><strong>Round ${report.round} complete.</strong> Correct answer: ${report.correct_text}</p>
+        <table>
+          <thead><tr><th>Player</th><th>Result</th><th>Delta</th><th>Score</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    socket.on("joined", (payload) => {
+      me = payload;
+    });
+
+    socket.on("room_state", (payload) => {
+      state = payload;
+      renderState();
+    });
+
+    socket.on("question", (payload) => {
+      renderQuestion(payload);
+      nextBtn.classList.add("hidden");
+    });
+
+    socket.on("round_result", (payload) => {
+      renderRoundReport(payload);
+      const isLeader = me && state && me.player_id === state.leader_id;
+      if (isLeader) nextBtn.classList.remove("hidden");
+    });
+
+    socket.on("game_over", (payload) => {
+      finalPanel.classList.remove("hidden");
+      const rows = payload.standings.map((p, i) => `<div class="score-row"><span>${i + 1}. ${p.name}</span><strong>${p.score}</strong></div>`).join("");
+      finalStandings.innerHTML = `<p><strong>Winner:</strong> ${payload.winner}</p>${rows}`;
+      nextBtn.classList.add("hidden");
+      startBtn.classList.add("hidden");
+      optionsBox.innerHTML = "";
+    });
+
+    socket.on("error_msg", (payload) => {
+      alert(payload.message);
+    });
+
+    startBtn.addEventListener("click", () => socket.emit("start_game"));
+    nextBtn.addEventListener("click", () => {
+      nextBtn.classList.add("hidden");
+      socket.emit("next_round");
+    });
+  </script>
+</body>
+</html>
