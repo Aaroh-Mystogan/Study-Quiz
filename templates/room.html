@@ -36,6 +36,12 @@
       <div id="scoreboard" class="scoreboard"></div>
     </section>
 
+    <section class="panel">
+      <h2>Race View</h2>
+      <p class="muted">Cars move forward based on current score.</p>
+      <div id="raceTrack" class="race-track"></div>
+    </section>
+
     <section class="panel hidden" id="finalPanel">
       <h2>Final Standings</h2>
       <div id="finalStandings"></div>
@@ -57,6 +63,7 @@
     const finalPanel = document.getElementById("finalPanel");
     const finalStandings = document.getElementById("finalStandings");
     const restartBtn = document.getElementById("restartBtn");
+    const raceTrack = document.getElementById("raceTrack");
 
     let me = null;
     let state = null;
@@ -80,6 +87,37 @@
       startBtn.classList.toggle("hidden", !(isLeader && state.status === "waiting"));
       nextBtn.classList.toggle("hidden", !(isLeader && state.status === "in_progress"));
       restartBtn.classList.toggle("hidden", !(isLeader && state.status === "finished"));
+      renderRace(state.players);
+    }
+
+    function renderRace(players) {
+      raceTrack.innerHTML = "";
+      if (!players || players.length === 0) {
+        raceTrack.innerHTML = `<p class="muted">No racers yet.</p>`;
+        return;
+      }
+
+      const scores = players.map(p => p.score);
+      const minScore = Math.min(...scores);
+      const maxScore = Math.max(...scores);
+      const range = Math.max(1, maxScore - minScore);
+
+      players.forEach((p, idx) => {
+        const progress = ((p.score - minScore) / range) * 100;
+        const lane = document.createElement("div");
+        lane.className = "race-lane";
+        lane.innerHTML = `
+          <div class="race-meta">
+            <strong>${idx + 1}. ${p.name}</strong>
+            <span>${p.score} pts</span>
+          </div>
+          <div class="lane-track">
+            <div class="finish-line"></div>
+            <div class="car" style="left: calc(${progress}% - 14px)" title="${p.name}">${p.id === state.leader_id ? "????" : "??"}</div>
+          </div>
+        `;
+        raceTrack.appendChild(lane);
+      });
     }
 
     function renderQuestion(payload) {
